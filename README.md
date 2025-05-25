@@ -1,14 +1,18 @@
 # EGMDQM_HLT_eff
 Filter-wise HLT efficiencies for EGM paths using HLT DQM files
 
-First download the online HLT DQM (HLTpb) root files of the selected runs from 
-https://cmsweb.cern.ch/dqm/offline/data/browse/ROOT/OnlineData/original/
-
-to your local directory.
 
 ```
 git clone https://github.com/sanuvarghese/EGMDQM_HLT_eff.git
+
+cd EGMDQM_HLT_eff
+
 ```
+
+Then download the online HLT DQM (HLTpb) root files of the selected runs from 
+https://cmsweb.cern.ch/dqm/offline/data/browse/ROOT/OnlineData/original/
+
+to this directory,
 
 then run
 ```
