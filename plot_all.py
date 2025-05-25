@@ -125,7 +125,7 @@ def draw_overlay(effs, title, outname):
 f = ROOT.TFile("out_barrelendcaps_new.root")
 
 
-for region in ["EB", "EBplus", "EBminus", "EE", "EEplus", "EEminus"]:
+for region in ["EB", "EE", "EBplus", "EBminus", "EEplus", "EEminus"]:
     hists = load_histograms(f, region)
     effs = compute_efficiencies(hists, region)
     draw_overlay(
