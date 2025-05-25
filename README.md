@@ -7,7 +7,7 @@ https://cmsweb.cern.ch/dqm/offline/data/browse/ROOT/OnlineData/original/
 to your local directory.
 
 ```
-git clone https://github.com/sanuvarghese/EGMDQM_HLT_ef.git
+git clone https://github.com/sanuvarghese/EGMDQM_HLT_eff.git
 ```
 
 then run
