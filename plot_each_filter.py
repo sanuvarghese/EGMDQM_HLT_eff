@@ -74,6 +74,12 @@ def draw_single(eff, label, region, i):
         return
 
     c = ROOT.TCanvas("c", "", 900, 700)
+    y_min = 1.0
+    for b in range(1, eff.GetNbinsX() + 1):
+        val = eff.GetBinContent(b)
+        if val > 0 and val < y_min:
+            y_min = val
+
     eff.SetMinimum(y_min*0.)
     eff.SetMaximum(1.0)
     eff.SetTitle(f"{region}: {label} Efficiency vs Run")

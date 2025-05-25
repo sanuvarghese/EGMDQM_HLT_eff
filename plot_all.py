@@ -40,6 +40,7 @@ def load_histograms(file, region):
         h = file.Get(hname)
         if h:
             histos[filt] = h.Clone(f"{region}_{filt}")
+            h.SetDirectory(0)
     return histos
 
 def compute_efficiencies(histos, region_label):
@@ -50,6 +51,7 @@ def compute_efficiencies(histos, region_label):
         if not num or not denom:
             continue
         eff = num.Clone(f"eff_{region_label}_{i}")
+        eff.SetDirectory(0)
         eff.Divide(denom)
         eff.SetLineWidth(3)
         eff.SetMarkerStyle(20)
@@ -78,6 +80,7 @@ def compute_efficiencies(histos, region_label):
     denom = histos.get(filters[0])
     if num and denom:
         total_eff = num.Clone(f"eff_{region_label}_total")
+        total_eff.SetDirectory(0)
         total_eff.Divide(denom)
         total_eff.SetLineWidth(4)
         total_eff.SetLineColor(ROOT.kBlack)
@@ -96,6 +99,12 @@ def draw_overlay(effs, title, outname):
     legend.SetBorderSize(0)
     legend.SetFillStyle(0)
     legend.SetTextSize(0.03)
+    y_min = 1.0
+    for _, h in effs:
+        for b in range(1, h.GetNbinsX() + 1):
+            val = h.GetBinContent(b)
+            if val > 0 and val < y_min:
+                y_min = val
 
     for i, (label, h) in enumerate(effs):
         h.SetMinimum(y_min*0.9)
