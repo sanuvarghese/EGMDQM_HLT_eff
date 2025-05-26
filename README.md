@@ -12,7 +12,7 @@ cd EGMDQM_HLT_eff
 Then download the online HLT DQM (HLTpb) root files of the selected runs from 
 https://cmsweb.cern.ch/dqm/offline/data/browse/ROOT/OnlineData/original/
 
-to this directory,
+to the ```inputFiles``` directory,
 
 then run
 ```
