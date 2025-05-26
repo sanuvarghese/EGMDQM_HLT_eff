@@ -26,7 +26,8 @@ def extract_run_number(filename):
 
 # Helper to extract counts for all regions in one go
 def getfiltercountsperrun(filename, forfakes=False):
-    f = ROOT.TFile(filename, "READ")
+    full_path = os.path.join("inputFiles", filename)  # prepend inputFiles/ to filename
+    f = ROOT.TFile(full_path, "READ")
     prefix = filename[-11:-5]
     folder = f"DQMData/Run {prefix}/HLT/Run summary/EGM/TrigObjTnP/"
     firstbin = 55 if forfakes else 25
