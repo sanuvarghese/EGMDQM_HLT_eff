@@ -59,7 +59,6 @@ def compute_efficiencies(histos, region_label):
         eff.SetMarkerColor(colors[i % len(colors)])
         eff.SetLineColor(colors[i % len(colors)])
 
-        # Compute delta (last avg - first avg)
         values = [eff.GetBinContent(b) for b in range(1, eff.GetNbinsX() + 1)]
         first = [v for v in values[:5] if v > 0]
         last = [v for v in values[-5:] if v > 0]
@@ -75,7 +74,7 @@ def compute_efficiencies(histos, region_label):
 
         effs.append((label, eff))
 
-    # Add total efficiency = last / first
+    # Add total efficiency
     num = histos.get(filters[-1])
     denom = histos.get(filters[0])
     if num and denom:
@@ -85,20 +84,23 @@ def compute_efficiencies(histos, region_label):
         total_eff.SetLineWidth(4)
         total_eff.SetLineColor(ROOT.kBlack)
         total_eff.SetMarkerColor(ROOT.kBlack)
-        total_eff.SetMarkerStyle(22)
+        total_eff.SetMarkerStyle(20)
         total_eff.SetTitle("Total")
         effs.append(("Total", total_eff))
 
     return effs
 
 def draw_overlay(effs, title, outname):
-    c = ROOT.TCanvas("c", "", 900, 700)
-    c.SetBottomMargin(0.12)
+    c = ROOT.TCanvas("c", "", 1000, 700)
+    c.SetRightMargin(0.2)
 
-    legend = ROOT.TLegend(0.45, 0.50, 0.78, 0.88)
-    legend.SetBorderSize(0)
-    legend.SetFillStyle(0)
-    legend.SetTextSize(0.03)
+    pad = ROOT.TPad("pad", "", 0.0, 0.0, 0.85, 1.0)
+    pad.SetBottomMargin(0.12)
+    pad.Draw()
+    pad.cd()
+
+    c._pad = pad  # Prevent premature deletion
+
     y_min = 1.0
     for _, h in effs:
         for b in range(1, h.GetNbinsX() + 1):
@@ -107,7 +109,7 @@ def draw_overlay(effs, title, outname):
                 y_min = val
 
     for i, (label, h) in enumerate(effs):
-        h.SetMinimum(y_min*0.9)
+        h.SetMinimum(y_min * 0.9)
         h.SetMaximum(1.0)
         h.SetTitle(title)
         h.GetXaxis().SetTitle("Run")
@@ -115,16 +117,22 @@ def draw_overlay(effs, title, outname):
         h.GetXaxis().SetTitleOffset(1.2)
         h.GetYaxis().SetTitleOffset(1.3)
         h.Draw("E SAME" if i else "E")
+
+    c.cd()
+    legend = ROOT.TLegend(0.76, 0.25, 0.99, 0.95)
+    legend.SetBorderSize(0)
+    legend.SetFillStyle(0)
+    legend.SetTextSize(0.03)
+    for label, h in effs:
         legend.AddEntry(h, label, "l")
-
     legend.Draw()
-    os.makedirs("plots_filter_eff", exist_ok=True)
-    c.SaveAs(f"plots_filter_eff/{outname}")
-    print(f"Saved: plots_filter_eff/{outname}")
+    outdir = "/eos/user/s/savarghe/www/EGMDQM/2025/plots_filter_eff"
+    os.makedirs(outdir, exist_ok=True)
+    c.SaveAs(f"{outdir}/{outname}")
+    print(f"Saved: {outdir}/{outname}")
 
+# Main execution
 f = ROOT.TFile("out_barrelendcaps_new.root")
-
-
 for region in ["EB", "EE", "EBplus", "EBminus", "EEplus", "EEminus"]:
     hists = load_histograms(f, region)
     effs = compute_efficiencies(hists, region)
@@ -133,6 +141,4 @@ for region in ["EB", "EE", "EBplus", "EBminus", "EEplus", "EEminus"]:
         f"{region}: Filter Efficiency vs Run",
         f"step_efficiency_{region}.png"
     )
-
-
 f.Close()

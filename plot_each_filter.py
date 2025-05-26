@@ -73,14 +73,22 @@ def draw_single(eff, label, region, i):
     if not eff:
         return
 
-    c = ROOT.TCanvas("c", "", 900, 700)
+    c = ROOT.TCanvas("c", "", 1000, 700)
+    c.SetRightMargin(0.2)
+
+    pad = ROOT.TPad("pad", "", 0.0, 0.0, 0.85, 1.0)
+    pad.SetBottomMargin(0.12)
+    pad.Draw()
+    pad.cd()
+    c._pad = pad
+
     y_min = 1.0
     for b in range(1, eff.GetNbinsX() + 1):
         val = eff.GetBinContent(b)
         if val > 0 and val < y_min:
             y_min = val
 
-    eff.SetMinimum(y_min*0.9)
+    eff.SetMinimum(y_min * 0.9)
     eff.SetMaximum(1.0)
     eff.SetTitle(f"{region}: {label} Efficiency vs Run")
     eff.GetXaxis().SetTitle("Run")
@@ -89,14 +97,15 @@ def draw_single(eff, label, region, i):
     eff.GetYaxis().SetTitleOffset(1.3)
     eff.Draw("P")
 
-    leg = ROOT.TLegend(0.55, 0.82, 0.79, 0.89)
+    c.cd()
+    leg = ROOT.TLegend(0.75, 0.78, 0.94, 0.89)
     leg.SetBorderSize(0)
     leg.SetFillStyle(0)
-    leg.SetTextSize(0.03)
+    leg.SetTextSize(0.035)
     leg.AddEntry(eff, label, "p")
     leg.Draw()
 
-    outdir = "plots_step_eff_single"
+    outdir = "/eos/user/s/savarghe/www/EGMDQM/2025/plots_step_eff_single"
     os.makedirs(outdir, exist_ok=True)
     cname = f"{outdir}/{region}_{short_label(filters[i])}.png"
     c.SaveAs(cname)

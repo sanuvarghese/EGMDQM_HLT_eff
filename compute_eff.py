@@ -26,7 +26,7 @@ def extract_run_number(filename):
 
 # Helper to extract counts for all regions in one go
 def getfiltercountsperrun(filename, forfakes=False):
-    full_path = os.path.join("inputFiles", filename)  # prepend inputFiles/ to filename
+    full_path = os.path.join("", filename)  # prepend inputFiles/ to filename
     f = ROOT.TFile(full_path, "READ")
     prefix = filename[-11:-5]
     folder = f"DQMData/Run {prefix}/HLT/Run summary/EGM/TrigObjTnP/"
@@ -67,7 +67,7 @@ def getfiltercountsperrun(filename, forfakes=False):
     return int(prefix), EB_counts, EBplus_counts, EBminus_counts, EE_counts, EEplus_counts, EEminus_counts
 
 # Gather all run numbers from files
-folder_path = '.'
+folder_path = '/eos/cms/store/group/tsg/STEAM/savarghe/HLTpbFiles/2025'
 run_numbers = []
 file_info = []
 for filename in os.listdir(folder_path):
@@ -105,6 +105,9 @@ for i in filters:
 for filename, run in file_info:
     print(f"Found file: {filename}")
     run, EB_vals, EBplus_vals, EBminus_vals, EE_vals, EEplus_vals, EEminus_vals = getfiltercountsperrun(os.path.join(folder_path, filename), forfakes=False)
+    if EB_vals[0] <= 20000:
+        print(f"Skipping run {run} (first filter EB count = {EB_vals[0]})")
+        continue
 
     # Fill EB histograms
     for i, hist in enumerate(histos_EB):
