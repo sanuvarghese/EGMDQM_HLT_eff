@@ -80,7 +80,7 @@ def draw_single(eff, label, region, i):
         if val > 0 and val < y_min:
             y_min = val
 
-    eff.SetMinimum(y_min*0.)
+    eff.SetMinimum(y_min*0.9)
     eff.SetMaximum(1.0)
     eff.SetTitle(f"{region}: {label} Efficiency vs Run")
     eff.GetXaxis().SetTitle("Run")
