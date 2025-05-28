@@ -88,7 +88,7 @@ for root, dirs, files in os.walk(base_dir):
     if images:
         html += """<div class="filter-box">
   <label for="filterInput"><strong>Filter:</strong></label>
-  <input type="text" id="filterInput" onkeyup="filterImages()" placeholder="e.g. EB+">
+  <input type="text" id="filterInput" onkeyup="filterImages()" placeholder="e.g. EBplus">
 </div>\n"""
         html += "<div style='clear: both'></div><div>\n"
         for img in images:
