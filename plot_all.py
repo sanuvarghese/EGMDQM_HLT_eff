@@ -64,7 +64,7 @@ def compute_efficiencies(histos, region_label):
         last = [v for v in values[-5:] if v > 0]
         delta = 0
         if first and last:
-            delta = (sum(last)/len(last)) - (sum(first)/len(first))
+            delta = (sum(last) / len(last)) - (sum(first) / len(first))
 
         label = short_label(filters[i])
         if delta > 0.01:
@@ -74,7 +74,7 @@ def compute_efficiencies(histos, region_label):
 
         effs.append((label, eff))
 
-    # Add total efficiency
+    # Total efficiency
     num = histos.get(filters[-1])
     denom = histos.get(filters[0])
     if num and denom:
@@ -84,7 +84,7 @@ def compute_efficiencies(histos, region_label):
         total_eff.SetLineWidth(4)
         total_eff.SetLineColor(ROOT.kBlack)
         total_eff.SetMarkerColor(ROOT.kBlack)
-        total_eff.SetMarkerStyle(20)
+        total_eff.SetMarkerStyle(22)
         total_eff.SetTitle("Total")
         effs.append(("Total", total_eff))
 
@@ -98,8 +98,7 @@ def draw_overlay(effs, title, outname):
     pad.SetBottomMargin(0.12)
     pad.Draw()
     pad.cd()
-
-    c._pad = pad  # Prevent premature deletion
+    c._pad = pad
 
     y_min = 1.0
     for _, h in effs:
@@ -110,14 +109,35 @@ def draw_overlay(effs, title, outname):
 
     for i, (label, h) in enumerate(effs):
         h.SetMinimum(y_min * 0.9)
-        h.SetMaximum(1.0)
+        h.SetMaximum(1.04)
         h.SetTitle(title)
         h.GetXaxis().SetTitle("Run")
         h.GetYaxis().SetTitle("Filter Efficiency")
         h.GetXaxis().SetTitleOffset(1.2)
         h.GetYaxis().SetTitleOffset(1.3)
+        h.GetXaxis().SetLabelSize(0.04)
+        h.GetYaxis().SetLabelSize(0.04)
         h.Draw("E SAME" if i else "E")
 
+    # Annotations
+    region = outname.split("_")[-1].replace(".png", "")
+    latex = ROOT.TLatex()
+    latex.SetNDC()
+    latex.SetTextSize(0.035)
+    latex.SetTextColor(ROOT.kViolet + 1)
+    latex.DrawLatex(0.15, 0.87, "{HLT_Ele32_WPTight_Gsf} (from HLT DQM T&P)")
+
+    # region_latex = {
+    #     "EB": "|#eta^{HLT}(e)| < 1.5,  p_{T}^{HLT}(e) > 32 GeV",
+    #     "EE": "|#eta^{HLT}(e)| > 1.5,  p_{T}^{HLT}(e) > 32 GeV",
+    #     "EBplus": "#eta^{HLT}(e) > 0,  |#eta| < 1.5,  p_{T}^{HLT}(e) > 32 GeV",
+    #     "EBminus": "#eta^{HLT}(e) < 0,  |#eta| < 1.5,  p_{T}^{HLT}(e) > 32 GeV",
+    #     "EEplus": "#eta^{HLT}(e) > 1.5,  p_{T}^{HLT}(e) > 32 GeV",
+    #     "EEminus": "#eta^{HLT}(e) < -1.5,  p_{T}^{HLT}(e) > 32 GeV"
+    # }
+    #latex.DrawLatex(0.15, 0.86, region_latex.get(region, ""))
+
+    # Legend
     c.cd()
     legend = ROOT.TLegend(0.76, 0.25, 0.99, 0.95)
     legend.SetBorderSize(0)
@@ -126,12 +146,13 @@ def draw_overlay(effs, title, outname):
     for label, h in effs:
         legend.AddEntry(h, label, "l")
     legend.Draw()
+
     outdir = "/eos/user/s/savarghe/www/EGMDQM/2025/plots_filter_eff"
     os.makedirs(outdir, exist_ok=True)
     c.SaveAs(f"{outdir}/{outname}")
     print(f"Saved: {outdir}/{outname}")
 
-# Main execution
+# --- Main ---
 f = ROOT.TFile("out_barrelendcaps_new.root")
 for region in ["EB", "EE", "EBplus", "EBminus", "EEplus", "EEminus"]:
     hists = load_histograms(f, region)

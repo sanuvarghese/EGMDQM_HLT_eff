@@ -89,13 +89,18 @@ def draw_single(eff, label, region, i):
             y_min = val
 
     eff.SetMinimum(y_min * 0.9)
-    eff.SetMaximum(1.0)
+    eff.SetMaximum(1.04)
     eff.SetTitle(f"{region}: {label} Efficiency vs Run")
     eff.GetXaxis().SetTitle("Run")
     eff.GetYaxis().SetTitle("Step Efficiency")
     eff.GetXaxis().SetTitleOffset(1.2)
     eff.GetYaxis().SetTitleOffset(1.3)
     eff.Draw("P")
+    latex = ROOT.TLatex()
+    latex.SetNDC()
+    latex.SetTextSize(0.035)
+    latex.SetTextColor(ROOT.kViolet + 1)
+    latex.DrawLatex(0.15, 0.87, "{HLT_Ele32_WPTight_Gsf} (from HLT DQM T&P)")
 
     c.cd()
     leg = ROOT.TLegend(0.75, 0.78, 0.94, 0.89)
