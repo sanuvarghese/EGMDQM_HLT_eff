@@ -84,7 +84,7 @@ def compute_efficiencies(histos, region_label):
         total_eff.SetLineWidth(4)
         total_eff.SetLineColor(ROOT.kBlack)
         total_eff.SetMarkerColor(ROOT.kBlack)
-        total_eff.SetMarkerStyle(22)
+        total_eff.SetMarkerStyle(20)
         total_eff.SetTitle("Total")
         effs.append(("Total", total_eff))
 
@@ -108,8 +108,8 @@ def draw_overlay(effs, title, outname):
                 y_min = val
 
     for i, (label, h) in enumerate(effs):
-        h.SetMinimum(y_min * 0.9)
-        h.SetMaximum(1.04)
+        h.SetMinimum(y_min * 0.95)
+        h.SetMaximum(1.05)
         h.SetTitle(title)
         h.GetXaxis().SetTitle("Run")
         h.GetYaxis().SetTitle("Filter Efficiency")
@@ -124,7 +124,7 @@ def draw_overlay(effs, title, outname):
     latex = ROOT.TLatex()
     latex.SetNDC()
     latex.SetTextSize(0.035)
-    latex.SetTextColor(ROOT.kViolet + 1)
+    latex.SetTextColor(ROOT.kBlack)
     latex.DrawLatex(0.15, 0.87, "{HLT_Ele32_WPTight_Gsf} (from HLT DQM T&P)")
 
     # region_latex = {
