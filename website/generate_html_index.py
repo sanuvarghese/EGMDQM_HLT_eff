@@ -1,110 +1,201 @@
-import os
-import unicodedata
-import time
+<!DOCTYPE html>
+<html lang="en" class="login-pf">
 
-# Base path and URL
-base_dir = "/eos/user/s/savarghe/www/EGMDQM"
-web_root = "https://savarghe.web.cern.ch/EGMDQM"
-image_extensions = [".png", ".jpg", ".jpeg"]
-
-def clean_filename(name):
-    return unicodedata.normalize('NFKD', name).encode('ASCII', 'ignore').decode()
-
-# Step 1: Create central style.css
-css_path = os.path.join(base_dir, "style.css")
-if not os.path.exists(css_path):
-    with open(css_path, "w") as f:
-        f.write("""
-body { font-family: Arial, sans-serif; margin: 20px; }
-h1 { font-size: 22px; }
-.box { margin: 10px 0; padding: 12px; border: 1px solid #ccc; border-radius: 8px; background: #f5f5f5; }
-.box a { text-decoration: none; font-weight: bold; font-size: 17px; color: #0066cc; }
-.box a:hover { text-decoration: underline; }
-.image-box { width: 30%; margin: 1%; float: left; text-align: center; }
-.image-box img { width: 100%; border: 1px solid #ccc; }
-.filter-box { clear: both; margin-top: 20px; }
-.breadcrumb { font-size: 14px; margin-bottom: 10px; }
-.meta { font-size: 12px; color: #666; }
-""")
-
-# Step 2: Clean non-ASCII names
-for root, dirs, files in os.walk(base_dir, topdown=True):
-    for i, d in enumerate(dirs):
-        new_d = clean_filename(d)
-        if new_d != d:
-            os.rename(os.path.join(root, d), os.path.join(root, new_d))
-            dirs[i] = new_d
-    for f in files:
-        new_f = clean_filename(f)
-        if new_f != f:
-            os.rename(os.path.join(root, f), os.path.join(root, new_f))
-
-# Step 3: Generate index.html files
-for root, dirs, files in os.walk(base_dir):
-    rel_path = os.path.relpath(root, base_dir)
-    web_base = f"{web_root}/{rel_path}" if rel_path != "." else web_root
-
-    subdirs = sorted(d for d in dirs if not d.startswith("."))
-    images = sorted(f for f in files if os.path.splitext(f)[1].lower() in image_extensions)
-
-    # Breadcrumb
-    parts = rel_path.split(os.sep) if rel_path != "." else []
-    breadcrumb = f'<a href="{web_root}">EGMDQM</a>'
-    for i, part in enumerate(parts):
-        link = "/".join(parts[:i+1])
-        breadcrumb += f' / <a href="{web_root}/{link}">{part}</a>'
-
-    html = f"""<!DOCTYPE html>
-<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Index of /{rel_path}</title>
-  <link rel="stylesheet" href="{web_root}/style.css">
-  <script>
-    function filterImages() {{
-      const filter = document.getElementById("filterInput").value.toLowerCase();
-      const boxes = document.getElementsByClassName("image-box");
-      for (let box of boxes) {{
-        const alt = box.querySelector("img").alt.toLowerCase();
-        box.style.display = alt.includes(filter) ? "block" : "none";
-      }}
-    }}
-  </script>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="robots" content="noindex, nofollow">
+
+            <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Sign in to CERN</title>
+    <link rel="icon" href="/auth/resources/s0lfj/login/keycloak-cern-theme/img/favicon.ico" />
+            <link href="/auth/resources/s0lfj/common/keycloak/node_modules/@patternfly/patternfly/patternfly.min.css" rel="stylesheet" />
+            <link href="/auth/resources/s0lfj/common/keycloak/node_modules/patternfly/dist/css/patternfly.min.css" rel="stylesheet" />
+            <link href="/auth/resources/s0lfj/common/keycloak/node_modules/patternfly/dist/css/patternfly-additions.min.css" rel="stylesheet" />
+            <link href="/auth/resources/s0lfj/common/keycloak/lib/pficon/pficon.css" rel="stylesheet" />
+            <link href="/auth/resources/s0lfj/login/keycloak-cern-theme/css/login.css" rel="stylesheet" />
+            <link href="/auth/resources/s0lfj/login/keycloak-cern-theme/css/cern-login.css" rel="stylesheet" />
+            <link href="/auth/resources/s0lfj/login/keycloak-cern-theme/css/toolbar.css" rel="stylesheet" />
+            <link href="/auth/resources/s0lfj/login/keycloak-cern-theme/css/footer.css" rel="stylesheet" />
+            <script src="/auth/resources/s0lfj/login/keycloak-cern-theme/js/polyfill.js" type="text/javascript"></script>
+            <script src="/auth/resources/s0lfj/login/keycloak-cern-theme/js/onload.js" type="text/javascript"></script>
 </head>
-<body>
-  <div class="breadcrumb">{breadcrumb}</div>
-  <h1>Contents of /{rel_path if rel_path != '.' else ''}</h1>
-"""
 
-    # Subdirectories
-    if subdirs:
-        html += "<h2>Subdirectories</h2>\n"
-        for d in subdirs:
-            sub_path = os.path.join(root, d)
-            mtime = time.strftime('%Y-%m-%d %H:%M', time.localtime(os.path.getmtime(sub_path)))
-            html += f'<div class="box"><a href="{d}/">{d}/</a><div class="meta">Last modified: {mtime}</div></div>\n'
+<body class="">
+<div style="position: fixed; width: 100%; top: 0px; left: 0px; z-index: 70;">
+    <div id="cern-toolbar">
+        <h1><a title="CERN" href="https://cern.ch">CERN <span>Accelerating science</span></a></h1>
+        <ul class="cern-signedin">
+            <li><a title="Search CERN resources and browse the directory" class="cern-directory" href="https://cern.ch/directory">Directory</a></li>
+        </ul>
+    </div>
+</div>
+  <div class="login-pf-page">
+    <div id="kc-header" class="login-pf-page-header">
+        <div id="kc-header-wrapper"
+             class="">CERN Single Sign-On</div>
+    </div>
+    <div class="card-pf login-pf-accounts">
+        <header class="login-pf-header">
+                <h1 id="kc-page-title">        Sign in to your account
 
-    # Image listing with filter
-    if images:
-        html += """<div class="filter-box">
-  <label for="filterInput"><strong>Filter:</strong></label>
-  <input type="text" id="filterInput" onkeyup="filterImages()" placeholder="e.g. EBplus">
-</div>\n"""
-        html += "<div style='clear: both'></div><div>\n"
-        for img in images:
-            img_path = os.path.join(root, img)
-            mtime = time.strftime('%Y-%m-%d %H:%M', time.localtime(os.path.getmtime(img_path)))
-            size_kb = os.path.getsize(img_path) // 1024
-            html += f"""<div class="image-box">
-  <a href="{img}" target="_blank"><img src="{img}" alt="{img}"></a><br>{img}
-  <div class="meta">Size: {size_kb} KB | Modified: {mtime}</div>
-</div>\n"""
-        html += "</div>"
+</h1>
+      </header>
+      <div id="kc-content">
+        <div id="kc-content-wrapper">
 
-    html += "</body>\n</html>"
 
-    # Write index.html
-    with open(os.path.join(root, "index.html"), "w", encoding="utf-8") as f:
-        f.write(html)
 
-    print(f"index.html created in {root}")
+    <div id="alert-security" class="alert-warning pf-c-alert pf-m-inline pf-m-warning login-alert" style="display: none;">
+        <div class="pf-c-alert__icon">
+            <span class="fa fa-fw fa-exclamation-triangle"></span>
+        </div>
+        <span class="pf-c-alert__title kc-feedback-text" id="security-motd"></span>
+    </div>
+
+    <div id="kc-form">
+      <div id="kc-form-wrapper">
+         <div class="login-form-caption-large"><h2>Sign in with a CERN account</h2></div>
+            <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="https://auth.cern.ch/auth/realms/cern/login-actions/authenticate?session_code=Y8PZoykuZNUCwlLeQk5MZIxT4pg-5qG9vsn-hWCfMTQ&amp;execution=382c6066-748f-442e-9842-fc3d8aff422f&amp;client_id=webframeworks-webeos-savarghe&amp;tab_id=Q7jeXH4KbKw" method="post">
+                <div class="form-group">
+                    <label for="username" class="pf-c-form__label pf-c-form__label-text">Username</label>
+
+                        <input id="username" class="pf-c-form-control" name="username" value=""  type="text" autofocus autocomplete="off" autocapitalize="none"
+                        aria-label="Enter your CERN Username"
+                               aria-invalid=""
+                        />
+
+                        <span id="username-email-help" class="pf-c-form__helper-text pf-m-error required kc-feedback-text" aria-live="polite" style="display: none">
+                            Enter a CERN username. To use an email address, choose &quot;Home organization - eduGain&quot;, &quot;External email - Guest access&quot; or social accounts.
+                        </span>
+
+                    </div>
+
+                <div class="form-group">
+                    <label for="password" class="pf-c-form__label pf-c-form__label-text">Password</label>
+                    
+                    <input id="password" class="pf-c-form-control" name="password" type="password" autocomplete="off" aria-label="Enter your CERN password"
+                           aria-invalid=""
+                    />
+
+
+                </div>
+
+
+
+                  <div id="kc-form-buttons" class="form-group">
+                    <input type="hidden" id="id-hidden-input" name="credentialId" />
+                    <input class="pf-c-button pf-m-primary pf-m-block btn-lg" name="login" id="kc-login" type="submit" value="Sign In"/>
+                  </div>
+
+                  <div class="form-group login-pf-settings">
+                    <div id="kc-form-options">
+                        </div>
+                        <div class="">
+                                <span><a href="https://users-portal.web.cern.ch/self-service-reset" id="resetPassUrl">Forgot Password?</a></span>
+                        </div>
+
+                  </div>
+                </form>
+
+                <div id="cern-providers" class="sub-providers">
+                <hr class="less-space-below">
+                <div class="login-form-caption-small"><h2>Or use another login method</h2></div>
+                    <ul class="pf-c-login__main-footer-links kc-social-links ">
+                        <a id="social-kerberos" class="pf-c-button pf-m-control pf-m-block kc-social-item kc-social-gray pf-l-grid__item"
+                                type="button" href="/auth/realms/cern/broker/kerberos/login?client_id=webframeworks-webeos-savarghe&amp;tab_id=Q7jeXH4KbKw&amp;session_code=Y8PZoykuZNUCwlLeQk5MZIxT4pg-5qG9vsn-hWCfMTQ">
+                                <i class="kc-social-provider-logo kc-social-gray fa fa-sign-in" aria-hidden="true"></i>
+                                <span class="kc-social-provider-name kc-social-icon-text">Kerberos</span>
+                        </a>
+                    </ul>
+                </div>
+            <div class="reminder-oc5">By logging in, you agree to comply with the <a href="https://security.web.cern.ch/rules/en/index.shtml">CERN Computing Rules</a>, in particular OC5. CERN implements the measures necessary to ensure compliance.</div>
+        </div>
+
+        <div id="kc-social-providers" class=" ">
+        <div class="login-form-caption-large"><h2>Sign in with your email or organisation</h2></div>
+                <div id="user-providers" class="sub-providers">
+                    <ul class="pf-c-login__main-footer-links kc-social-links ">
+                        <a id="social-eduGAIN" class="pf-c-button pf-m-control pf-m-block kc-social-item kc-social-gray pf-l-grid__item"
+                                type="button" href="/auth/realms/cern/broker/eduGAIN/login?client_id=webframeworks-webeos-savarghe&amp;tab_id=Q7jeXH4KbKw&amp;session_code=Y8PZoykuZNUCwlLeQk5MZIxT4pg-5qG9vsn-hWCfMTQ">
+                                <i class="kc-social-provider-logo kc-social-gray fa fa-university" aria-hidden="true"></i>
+                                <span class="kc-social-provider-name kc-social-icon-text">Home organisation - eduGAIN</span>
+                        </a>
+                        <a id="social-guest" class="pf-c-button pf-m-control pf-m-block kc-social-item kc-social-gray pf-l-grid__item"
+                                type="button" href="/auth/realms/cern/broker/guest/login?client_id=webframeworks-webeos-savarghe&amp;tab_id=Q7jeXH4KbKw&amp;session_code=Y8PZoykuZNUCwlLeQk5MZIxT4pg-5qG9vsn-hWCfMTQ">
+                                <i class="kc-social-provider-logo kc-social-gray fa fa-envelope" aria-hidden="true"></i>
+                                <span class="kc-social-provider-name kc-social-icon-text">External email - Guest access</span>
+                        </a>
+                    </ul>
+                </div>
+
+                <div id="social-providers" class="sub-providers">
+                <hr class="more-space-below">
+                <div class="login-form-caption-large"><h2>Sign in with a social account</h2></div>
+                <div class="social-privacy-notice">By clicking on the buttons below, you consent to CERN's transfer of your login request to the social provider and to receive your account name, name and e-mail for authenticating you. See more details in our <a href="https://auth.docs.cern.ch/privacy-notice/#social-login-providers-privacy-notices" target="_blank">Privacy Notice</a>.</div>
+                    <ul class="pf-c-login__main-footer-links kc-social-links ">
+                        <a id="social-google" class="pf-c-button pf-m-control pf-m-block kc-social-item kc-social-gray pf-l-grid__item"
+                                type="button" href="/auth/realms/cern/broker/google/login?client_id=webframeworks-webeos-savarghe&amp;tab_id=Q7jeXH4KbKw&amp;session_code=Y8PZoykuZNUCwlLeQk5MZIxT4pg-5qG9vsn-hWCfMTQ">
+                                <i class="kc-social-provider-logo kc-social-gray fa fa-google" aria-hidden="true"></i>
+                                <span class="kc-social-provider-name kc-social-icon-text">Google</span>
+                        </a>
+                        <a id="social-github" class="pf-c-button pf-m-control pf-m-block kc-social-item kc-social-gray pf-l-grid__item"
+                                type="button" href="/auth/realms/cern/broker/github/login?client_id=webframeworks-webeos-savarghe&amp;tab_id=Q7jeXH4KbKw&amp;session_code=Y8PZoykuZNUCwlLeQk5MZIxT4pg-5qG9vsn-hWCfMTQ">
+                                <i class="kc-social-provider-logo kc-social-gray fa fa-github" aria-hidden="true"></i>
+                                <span class="kc-social-provider-name kc-social-icon-text">GitHub</span>
+                        </a>
+                        <a id="social-facebook" class="pf-c-button pf-m-control pf-m-block kc-social-item kc-social-gray pf-l-grid__item"
+                                type="button" href="/auth/realms/cern/broker/facebook/login?client_id=webframeworks-webeos-savarghe&amp;tab_id=Q7jeXH4KbKw&amp;session_code=Y8PZoykuZNUCwlLeQk5MZIxT4pg-5qG9vsn-hWCfMTQ">
+                                <i class="kc-social-provider-logo kc-social-gray fa fa-facebook" aria-hidden="true"></i>
+                                <span class="kc-social-provider-name kc-social-icon-text">Facebook</span>
+                        </a>
+                        <a id="social-linkedin-openid-connect" class="pf-c-button pf-m-control pf-m-block kc-social-item kc-social-gray pf-l-grid__item"
+                                type="button" href="/auth/realms/cern/broker/linkedin-openid-connect/login?client_id=webframeworks-webeos-savarghe&amp;tab_id=Q7jeXH4KbKw&amp;session_code=Y8PZoykuZNUCwlLeQk5MZIxT4pg-5qG9vsn-hWCfMTQ">
+                                <i class="kc-social-provider-logo kc-social-gray fa fa-linkedin" aria-hidden="true"></i>
+                                <span class="kc-social-provider-name kc-social-icon-text">LinkedIn</span>
+                        </a>
+                    </ul>
+                </div>
+        </div>
+    </div>
+
+
+        
+
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+<div id='cernfooter'>
+    <div id='flex'>
+        <div class='col debug'>-<br/>k8s-authzsvc-prod-b-v30</div>
+        <div class='col'>
+            <h2>Account</h2>
+            <ul>
+                <li><a href='https://users-portal.web.cern.ch' target='_blank'>Manage your account</a></li>
+            </ul>
+        </div>
+        <div class='col'>
+            <h2>Privacy</h2>
+            <ul>
+                <li><a href='https://auth.docs.cern.ch/privacy-notice/' target='_blank'>Privacy Notice</a></li>
+            </ul>
+        </div>
+        <div class='col'>
+            <h2>Support</h2>
+            <ul>
+                <li><a href='https://www.cern.ch/service-portal' target='_blank'>Service Desk - </a> <a href='tel:+41227677777'>+41 22 76 77777</a></li>
+                <li><a href='https://cern.service-now.com/service-portal?id=service_status_board' target='_blank'>Service Status</a></li>
+            </ul>
+        </div>
+        <div class='lastcol'>
+            <a href='https://home.cern' title='CERN' rel='CERN' target='_blank'><img border='0' src='/auth/resources/s0lfj/login/keycloak-cern-theme/img/logo.svg' alt='CERN' class="cernlogo"></a>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>
