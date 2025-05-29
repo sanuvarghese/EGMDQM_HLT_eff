@@ -34,6 +34,7 @@ python3 unpack.py
 python3 compute_eff.py
 python3 plot_all.py
 python3 plot_each_filter.py
+python3 website/website/generate_html_index.py 
 ```
 `unpack.py ` unpacks the zip files from ```/eos/cms/store/group/comm_dqm/DQMGUI_Backup/data/offline/OnlineData/original/``` selecting only the HLTpb files of  greater than a run number and a minimum size (10 MB). It also skips the existing files(that are already unpacked) in the target directory.
 
@@ -42,6 +43,8 @@ python3 plot_each_filter.py
 `plot_all.py` calculates the filter wise efficiency and plots them overlaying them in a single plot.
 
 `plot_each_filter.py` does the same but creates individual filter png files.
+
+`generate_html_index.py ` regenerates the hltml index files so that the website shows the correct modified file size and time for the images.
 
 ## Setting up Cron Jobs.
 
