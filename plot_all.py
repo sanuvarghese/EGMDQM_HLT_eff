@@ -1,9 +1,15 @@
 import ROOT
 import os
+import argparse
 
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(0)
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--year', choices=['2024', '2025', '2024_25'], default='2025', help='Which year to process')
+parser.add_argument('--quiet', '-q', action='store_true', help='Suppress printout messages')
+args = parser.parse_args()
 
 filters = [
     "hltEG32L1SingleEGOrEtFilter",
@@ -90,7 +96,7 @@ def compute_efficiencies(histos, region_label):
 
     return effs
 
-def draw_overlay(effs, title, outname):
+def draw_overlay(effs, title, outname, outdir):
     c = ROOT.TCanvas("c", "", 1000, 700)
     c.SetRightMargin(0.2)
 
@@ -100,16 +106,21 @@ def draw_overlay(effs, title, outname):
     pad.cd()
     c._pad = pad
 
+    # Compute global y_min and y_max from all histograms
     y_min = 1.0
+    y_max = 0.0
     for _, h in effs:
         for b in range(1, h.GetNbinsX() + 1):
             val = h.GetBinContent(b)
+            err = h.GetBinError(b)
             if val > 0 and val < y_min:
                 y_min = val
+            if val + err > y_max:
+                y_max = val + err
 
     for i, (label, h) in enumerate(effs):
         h.SetMinimum(y_min * 0.95)
-        h.SetMaximum(1.05)
+        h.SetMaximum(y_max * 1.05)
         h.SetTitle(title)
         h.GetXaxis().SetTitle("Run")
         h.GetYaxis().SetTitle("Filter Efficiency")
@@ -119,23 +130,12 @@ def draw_overlay(effs, title, outname):
         h.GetYaxis().SetLabelSize(0.04)
         h.Draw("E SAME" if i else "E")
 
-    # Annotations
-    region = outname.split("_")[-1].replace(".png", "")
+    # Annotation
     latex = ROOT.TLatex()
     latex.SetNDC()
     latex.SetTextSize(0.035)
     latex.SetTextColor(ROOT.kBlack)
     latex.DrawLatex(0.15, 0.87, "{HLT_Ele32_WPTight_Gsf} (from HLT DQM T&P)")
-
-    # region_latex = {
-    #     "EB": "|#eta^{HLT}(e)| < 1.5,  p_{T}^{HLT}(e) > 32 GeV",
-    #     "EE": "|#eta^{HLT}(e)| > 1.5,  p_{T}^{HLT}(e) > 32 GeV",
-    #     "EBplus": "#eta^{HLT}(e) > 0,  |#eta| < 1.5,  p_{T}^{HLT}(e) > 32 GeV",
-    #     "EBminus": "#eta^{HLT}(e) < 0,  |#eta| < 1.5,  p_{T}^{HLT}(e) > 32 GeV",
-    #     "EEplus": "#eta^{HLT}(e) > 1.5,  p_{T}^{HLT}(e) > 32 GeV",
-    #     "EEminus": "#eta^{HLT}(e) < -1.5,  p_{T}^{HLT}(e) > 32 GeV"
-    # }
-    #latex.DrawLatex(0.15, 0.86, region_latex.get(region, ""))
 
     # Legend
     c.cd()
@@ -147,19 +147,26 @@ def draw_overlay(effs, title, outname):
         legend.AddEntry(h, label, "l")
     legend.Draw()
 
-    outdir = "/eos/user/s/savarghe/www/EGMDQM/2025/plots_filter_eff"
     os.makedirs(outdir, exist_ok=True)
-    c.SaveAs(f"{outdir}/{outname}")
-    print(f"Saved: {outdir}/{outname}")
+    full_out = os.path.join(outdir, outname)
+    c.SaveAs(full_out)
+    if not args.quiet:
+        print(f"Saved: {full_out}")
 
 # --- Main ---
-f = ROOT.TFile("out_barrelendcaps_new.root")
-for region in ["EB", "EE", "EBplus", "EBminus", "EEplus", "EEminus"]:
-    hists = load_histograms(f, region)
-    effs = compute_efficiencies(hists, region)
-    draw_overlay(
-        effs,
-        f"{region}: Filter Efficiency vs Run",
-        f"step_efficiency_{region}.png"
-    )
-f.Close()
+if __name__ == "__main__":
+    year = args.year
+    infile = f"out_barrelendcaps_{year}.root"
+    outdir = f"/eos/user/s/savarghe/www/EGMDQM/{year}/plots_filter_eff"
+
+    f = ROOT.TFile(infile)
+    for region in ["EB", "EE", "EBplus", "EBminus", "EEplus", "EEminus"]:
+        hists = load_histograms(f, region)
+        effs = compute_efficiencies(hists, region)
+        draw_overlay(
+            effs,
+            f"{region}: Filter Efficiency vs Run",
+            f"step_efficiency_{region}.png",
+            outdir
+        )
+    f.Close()

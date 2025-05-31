@@ -1,9 +1,16 @@
 import ROOT
 import os
+import argparse
 
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(0)
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
+
+# Argument parser
+parser = argparse.ArgumentParser()
+parser.add_argument('--year', choices=['2024', '2025', '2024_25'], default='2025', help='Which year to process')
+parser.add_argument('--quiet', '-q', action='store_true', help='Suppress printout messages')
+args = parser.parse_args()
 
 filters = [
     "hltEG32L1SingleEGOrEtFilter",
@@ -83,19 +90,23 @@ def draw_single(eff, label, region, i):
     c._pad = pad
 
     y_min = 1.0
+    y_max = 0.0
     for b in range(1, eff.GetNbinsX() + 1):
         val = eff.GetBinContent(b)
+        err = eff.GetBinError(b)
         if val > 0 and val < y_min:
             y_min = val
-
+        if val + err > y_max:
+            y_max = val + err
     eff.SetMinimum(y_min * 0.9)
-    eff.SetMaximum(1.02)
+    eff.SetMaximum(y_max * 1.05)
     eff.SetTitle(f"{region}: {label} Efficiency vs Run")
     eff.GetXaxis().SetTitle("Run")
     eff.GetYaxis().SetTitle("Step Efficiency")
     eff.GetXaxis().SetTitleOffset(1.2)
     eff.GetYaxis().SetTitleOffset(1.3)
     eff.Draw("P")
+
     latex = ROOT.TLatex()
     latex.SetNDC()
     latex.SetTextSize(0.035)
@@ -110,14 +121,16 @@ def draw_single(eff, label, region, i):
     leg.AddEntry(eff, label, "p")
     leg.Draw()
 
-    outdir = "/eos/user/s/savarghe/www/EGMDQM/2025/plots_step_eff_single"
+    outdir = f"/eos/user/s/savarghe/www/EGMDQM/{args.year}/plots_step_eff_single"
     os.makedirs(outdir, exist_ok=True)
     cname = f"{outdir}/{region}_{short_label(filters[i])}.png"
     c.SaveAs(cname)
-    print(f"Saved: {cname}")
+    if not args.quiet:
+        print(f"Saved: {cname}")
 
 # MAIN
-f = ROOT.TFile("out_barrelendcaps_new.root")
+infile = f"out_barrelendcaps_{args.year}.root"
+f = ROOT.TFile(infile)
 
 for region in ["EB", "EE", "EBplus", "EBminus", "EEplus", "EEminus"]:
     histos = load_histograms(f, region)

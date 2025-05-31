@@ -1,7 +1,7 @@
 import os
 import unicodedata
 import time
-
+import re
 base_dir = "/eos/user/s/savarghe/www/EGMDQM"
 web_root = "https://savarghe.web.cern.ch/EGMDQM"
 image_extensions = [".png", ".jpg", ".jpeg"]
@@ -42,22 +42,28 @@ for root, dirs, files in os.walk(base_dir, topdown=True):
 for root, dirs, files in os.walk(base_dir):
     rel_path = os.path.relpath(root, base_dir)
     web_base = f"{web_root}/{rel_path}" if rel_path != "." else web_root
-    subdirs = sorted(d for d in dirs if not d.startswith("."))
+    # subdirs = sorted((d for d in dirs if not d.startswith(".")), reverse=True)
+    subdirs_raw = [d for d in dirs if not d.startswith(".")]
+    numeric_dirs = [d for d in subdirs_raw if re.fullmatch(r'\d+', d)]
+    non_numeric_dirs = [d for d in subdirs_raw if not re.fullmatch(r'\d+', d)]
+
+    subdirs = sorted(numeric_dirs, key=int, reverse=True) + sorted(non_numeric_dirs)
     images = sorted(f for f in files if os.path.splitext(f)[1].lower() in image_extensions)
 
-    # Breadcrumb
     parts = rel_path.split(os.sep) if rel_path != "." else []
     breadcrumb = f'<a href="{web_root}">EGMDQM</a>'
     for i, part in enumerate(parts):
         link = "/".join(parts[:i+1])
         breadcrumb += f' / <a href="{web_root}/{link}">{part}</a>'
 
-    # Start HTML
     html = f"""<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <title>Index of /{rel_path}</title>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <link rel="stylesheet" href="{web_root}/style.css">
   <script>
     function getQueryParam(param) {{
@@ -124,8 +130,11 @@ for root, dirs, files in os.walk(base_dir):
 
     html += "</body>\n</html>"
 
-    # Save index.html
-    with open(os.path.join(root, "index.html"), "w", encoding="utf-8") as f:
+    index_path = os.path.join(root, "index.html")
+    with open(index_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    print(f"index.html created in {root}")
+    # Update the modified time to current
+    os.utime(index_path, None)
+
+#    print(f"index.html created in {root}")

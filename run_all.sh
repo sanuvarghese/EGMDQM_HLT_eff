@@ -11,5 +11,11 @@ python3 unpack.py
 python3 compute_eff.py 
 python3 plot_all.py
 python3 plot_each_filter.py
+#Run for 2024_25
+python3 copy_newfiles.py
+python3 compute_eff.py --year 2024_25 --quiet
+python3 plot_all.py --year 2024_25 --quiet
+python3 plot_each_filter.py --year 2024_25 --quiet
+#update website
 python3 website/generate_html_index.py
 echo "[`date`] Finished compute_eff and plots updated"

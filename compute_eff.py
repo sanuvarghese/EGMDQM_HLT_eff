@@ -1,7 +1,7 @@
-#based on Laurent's code
 import ROOT
 import os
 import re
+import argparse
 
 filters = [
     'hltEG32L1SingleEGOrEtFilter',
@@ -18,37 +18,32 @@ filters = [
     'hltEle32WPTightGsfTrackIsoFilter'
 ]
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--year', choices=['2024', '2025', '2024_25'], default='2025', help='Which year to run over')
+parser.add_argument('--quiet', '-q', action='store_true', help='Suppress printout messages')
+args = parser.parse_args()
+
+base_dir = '/eos/cms/store/group/tsg/STEAM/savarghe/HLTpbFiles'
+folder_path = os.path.join(base_dir, args.year)
+
 def extract_run_number(filename):
     match = re.search(r'R0*([0-9]{6})', filename)
-    if match:
-        return int(match.group(1))
-    return None
+    return int(match.group(1)) if match else None
 
-# Helper to extract counts for all regions in one go
-def getfiltercountsperrun(filename, forfakes=False):
-    full_path = os.path.join("", filename)  # prepend inputFiles/ to filename
-    f = ROOT.TFile(full_path, "READ")
+def get_counts(filename, forfakes=False):
+    f = ROOT.TFile.Open(filename)
     prefix = filename[-11:-5]
     folder = f"DQMData/Run {prefix}/HLT/Run summary/EGM/TrigObjTnP/"
     firstbin = 55 if forfakes else 25
-    lastbin = 60 if forfakes else 35
 
-    EB_counts = []
-    EBplus_counts = []
-    EBminus_counts = []
-    EE_counts = []
-    EEplus_counts = []
-    EEminus_counts = []
+    EB, EBplus, EBminus = [], [], []
+    EE, EEplus, EEminus = [], [], []
 
-    for i in filters:
-        h = f.Get(folder + "stdTag_" + i + "_eta")
+    for filt in filters:
+        h = f.Get(folder + "stdTag_" + filt + "_eta")
         if not h:
-            EB_counts.append(0)
-            EBplus_counts.append(0)
-            EBminus_counts.append(0)
-            EE_counts.append(0)
-            EEplus_counts.append(0)
-            EEminus_counts.append(0)
+            EB.append(0); EBplus.append(0); EBminus.append(0)
+            EE.append(0); EEplus.append(0); EEminus.append(0)
             continue
         val_EB = int(h.Integral(2, 3, firstbin, 60))
         val_EBplus = int(h.Integral(3, 3, firstbin, 60))
@@ -57,92 +52,72 @@ def getfiltercountsperrun(filename, forfakes=False):
         val_EEminus = int(h.Integral(1, 1, firstbin, 60))
         val_EE = val_EEplus + val_EEminus
 
-        EB_counts.append(val_EB)
-        EBplus_counts.append(val_EBplus)
-        EBminus_counts.append(val_EBminus)
-        EE_counts.append(val_EE)
-        EEplus_counts.append(val_EEplus)
-        EEminus_counts.append(val_EEminus)
+        EB.append(val_EB)
+        EBplus.append(val_EBplus)
+        EBminus.append(val_EBminus)
+        EE.append(val_EE)
+        EEplus.append(val_EEplus)
+        EEminus.append(val_EEminus)
 
-    return int(prefix), EB_counts, EBplus_counts, EBminus_counts, EE_counts, EEplus_counts, EEminus_counts
+    return EB, EBplus, EBminus, EE, EEplus, EEminus
 
-# Gather all run numbers from files
-folder_path = '/eos/cms/store/group/tsg/STEAM/savarghe/HLTpbFiles/2025'
-run_numbers = []
-file_info = []
-for filename in os.listdir(folder_path):
-    if os.path.isfile(os.path.join(folder_path, filename)) and filename.endswith('.root') and filename.startswith('DQM'):
-        run = extract_run_number(filename)
-        if run is not None:
-            run_numbers.append(run)
-            file_info.append((filename, run))
+# Step 1: Read and store data for valid runs
+valid_runs = []
+all_counts = []
 
-if not run_numbers:
-    print("No valid ROOT files with run numbers found.")
-    exit(1)
-
-min_run = (min(run_numbers) // 1000) * 1000
-max_run = ((max(run_numbers) // 1000) + 1) * 1000
-nbins = max_run - min_run
-
-# Create histograms
-histos_EB = []
-histos_EBplus = []
-histos_EBminus = []
-histos_EE = []
-histos_EEplus = []
-histos_EEminus = []
-
-for i in filters:
-    histos_EB.append(ROOT.TH1F('histosEB_countsvsrun_' + i, '', nbins, min_run, max_run))
-    histos_EBplus.append(ROOT.TH1F('histosEBplus_countsvsrun_' + i, '', nbins, min_run, max_run))
-    histos_EBminus.append(ROOT.TH1F('histosEBminus_countsvsrun_' + i, '', nbins, min_run, max_run))
-    histos_EE.append(ROOT.TH1F('histosEE_countsvsrun_' + i, '', nbins, min_run, max_run))
-    histos_EEplus.append(ROOT.TH1F('histosEEplus_countsvsrun_' + i, '', nbins, min_run, max_run))
-    histos_EEminus.append(ROOT.TH1F('histosEEminus_countsvsrun_' + i, '', nbins, min_run, max_run))
-
-# Loop through all files
-for filename, run in file_info:
-    print(f"Found file: {filename}")
-    run, EB_vals, EBplus_vals, EBminus_vals, EE_vals, EEplus_vals, EEminus_vals = getfiltercountsperrun(os.path.join(folder_path, filename), forfakes=False)
-    if EB_vals[0] <= 20000:
-        print(f"Skipping run {run} (first filter EB count = {EB_vals[0]})")
+for fname in sorted(os.listdir(folder_path)):
+    if not (fname.endswith(".root") and fname.startswith("DQM")):
+        continue
+    full_path = os.path.join(folder_path, fname)
+    if not args.quiet:
+        print(f"Found file: {fname}")
+    run = extract_run_number(fname)
+    if run is None:
+        if not args.quiet:
+            print(f"Skipping {fname} (no run number found)")
+        continue
+    try:
+        EB, EBplus, EBminus, EE, EEplus, EEminus = get_counts(full_path)
+        if EB[0] > 30000:
+            valid_runs.append(run)
+            all_counts.append((run, EB, EBplus, EBminus, EE, EEplus, EEminus))
+        else:
+            if not args.quiet:
+                print(f"Skipping run {run} (first filter EB count = {EB[0]})")
+    except Exception as e:
+        if not args.quiet:
+            print(f"Skipping {fname} due to error: {e}")
         continue
 
-    # Fill EB histograms
-    for i, hist in enumerate(histos_EB):
-        hist.Fill(run, EB_vals[i])
-        hist.SetBinError(hist.FindBin(run), pow(EB_vals[i], 0.5))
+if not valid_runs:
+    print(f"No valid runs found passing EB > 30000 in {folder_path}")
+    exit(1)
 
-    # Fill EB+ histograms
-    for i, hist in enumerate(histos_EBplus):
-        hist.Fill(run, EBplus_vals[i])
-        hist.SetBinError(hist.FindBin(run), pow(EBplus_vals[i], 0.5))
+min_run = (min(valid_runs) // 1000) * 1000
+max_run = ((max(valid_runs) // 1000) + 1) * 1000
+nbins = max_run - min_run
 
-    # Fill EB- histograms
-    for i, hist in enumerate(histos_EBminus):
-        hist.Fill(run, EBminus_vals[i])
-        hist.SetBinError(hist.FindBin(run), pow(EBminus_vals[i], 0.5))
+# Step 2: Initialize histograms
+histos = {region: [] for region in ["EB", "EBplus", "EBminus", "EE", "EEplus", "EEminus"]}
+for region in histos:
+    for filt in filters:
+        histos[region].append(ROOT.TH1F(f"histos{region}_countsvsrun_{filt}", '', nbins, min_run, max_run))
 
-    # Fill EE histograms
-    for i, hist in enumerate(histos_EE):
-        hist.Fill(run, EE_vals[i])
-        hist.SetBinError(hist.FindBin(run), pow(EE_vals[i], 0.5))
+# Step 3: Fill histograms
+for run, EB, EBplus, EBminus, EE, EEplus, EEminus in all_counts:
+    for i, h in enumerate(histos["EB"]):        h.Fill(run, EB[i]);        h.SetBinError(h.FindBin(run), EB[i]**0.5)
+    for i, h in enumerate(histos["EBplus"]):    h.Fill(run, EBplus[i]);    h.SetBinError(h.FindBin(run), EBplus[i]**0.5)
+    for i, h in enumerate(histos["EBminus"]):   h.Fill(run, EBminus[i]);   h.SetBinError(h.FindBin(run), EBminus[i]**0.5)
+    for i, h in enumerate(histos["EE"]):        h.Fill(run, EE[i]);        h.SetBinError(h.FindBin(run), EE[i]**0.5)
+    for i, h in enumerate(histos["EEplus"]):    h.Fill(run, EEplus[i]);    h.SetBinError(h.FindBin(run), EEplus[i]**0.5)
+    for i, h in enumerate(histos["EEminus"]):   h.Fill(run, EEminus[i]);   h.SetBinError(h.FindBin(run), EEminus[i]**0.5)
 
-    # Fill EE+ histograms
-    for i, hist in enumerate(histos_EEplus):
-        hist.Fill(run, EEplus_vals[i])
-        hist.SetBinError(hist.FindBin(run), pow(EEplus_vals[i], 0.5))
-
-    # Fill EE- histograms
-    for i, hist in enumerate(histos_EEminus):
-        hist.Fill(run, EEminus_vals[i])
-        hist.SetBinError(hist.FindBin(run), pow(EEminus_vals[i], 0.5))
-
-# Write histograms
-out = ROOT.TFile('out_barrelendcaps_new.root', "RECREATE")
-for h in histos_EB + histos_EBplus + histos_EBminus + histos_EE + histos_EEplus + histos_EEminus:
-    h.Write()
+# Step 4: Write output
+outname = f"out_barrelendcaps_{args.year}.root"
+out = ROOT.TFile(outname, "RECREATE")
+for hlist in histos.values():
+    for h in hlist:
+        h.Write()
 out.Close()
 
-print(f"Histograms written to out_barrelendcaps_new.root with run range {min_run} to {max_run}")
+print(f"Done. Histograms saved to {outname} with run range {min_run}-{max_run} ({len(valid_runs)} valid runs)")
