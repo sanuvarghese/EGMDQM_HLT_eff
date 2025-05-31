@@ -5,7 +5,7 @@ import argparse
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(0)
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
-
+ROOT.gErrorIgnoreLevel = ROOT.kError
 # Argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument('--year', choices=['2024', '2025', '2024_25'], default='2025', help='Which year to process')
@@ -54,30 +54,31 @@ def compute_single_efficiency(histos, i, region_label):
     if not num or not denom:
         return None, None, None
 
-    eff = num.Clone(f"eff_{region_label}_{i}")
-    eff.Divide(denom)
-    eff.SetLineWidth(3)
-    eff.SetMarkerStyle(20)
-    eff.SetMarkerSize(0.9)
-    eff.SetMarkerColor(colors[i % len(colors)])
-    eff.SetLineColor(colors[i % len(colors)])
+    g = ROOT.TGraphAsymmErrors()
+    g.BayesDivide(num, denom)
+    g.SetName(f"g_{region_label}_{i}")
+    g.SetLineWidth(3)
+    g.SetMarkerStyle(20)
+    g.SetMarkerSize(1.1)
+    g.SetMarkerColor(colors[i % len(colors)])
+    g.SetLineColor(colors[i % len(colors)])
 
-    values = [eff.GetBinContent(b) for b in range(1, eff.GetNbinsX() + 1)]
-    first = [v for v in values[:5] if v > 0]
-    last = [v for v in values[-5:] if v > 0]
-    delta = 0
-    if first and last:
-        delta = (sum(last) / len(last)) - (sum(first) / len(first))
+    # Trend
+    yvals = [g.GetY()[j] for j in range(g.GetN()) if g.GetY()[j] > 0]
+    first = yvals[:5]
+    last = yvals[-5:]
+    delta = (sum(last) / len(last)) - (sum(first) / len(first)) if first and last else 0
 
     label = short_label(filters[i])
-    if delta > 0.01:
-        label += " (up)"
-    elif delta < -0.01:
-        label += " (down)"
-    return eff, label, delta
+    # if delta > 0.01:
+    #     label += " (up)"
+    # elif delta < -0.01:
+    #     label += " (down)"
 
-def draw_single(eff, label, region, i):
-    if not eff:
+    return g, label, delta
+
+def draw_single(graph, label, region, i):
+    if not graph:
         return
 
     c = ROOT.TCanvas("c", "", 1000, 700)
@@ -87,25 +88,27 @@ def draw_single(eff, label, region, i):
     pad.SetBottomMargin(0.12)
     pad.Draw()
     pad.cd()
-    c._pad = pad
 
+    # Y-axis range
     y_min = 1.0
     y_max = 0.0
-    for b in range(1, eff.GetNbinsX() + 1):
-        val = eff.GetBinContent(b)
-        err = eff.GetBinError(b)
-        if val > 0 and val < y_min:
-            y_min = val
-        if val + err > y_max:
-            y_max = val + err
-    eff.SetMinimum(y_min * 0.9)
-    eff.SetMaximum(y_max * 1.05)
-    eff.SetTitle(f"{region}: {label} Efficiency vs Run")
-    eff.GetXaxis().SetTitle("Run")
-    eff.GetYaxis().SetTitle("Step Efficiency")
-    eff.GetXaxis().SetTitleOffset(1.2)
-    eff.GetYaxis().SetTitleOffset(1.3)
-    eff.Draw("P")
+    for b in range(graph.GetN()):
+        y = graph.GetY()[b]
+        yerr = graph.GetErrorYhigh(b)
+        if y > 0 and y < y_min:
+            y_min = y
+        if y + yerr > y_max:
+            y_max = y + yerr
+
+    graph.SetMinimum(y_min * 0.9)
+    graph.SetMaximum(y_max * 1.02)
+    graph.SetTitle(f"{region}: {label} Filter Efficiency vs Run") 
+    graph.GetXaxis().SetTitle("Run")
+    graph.GetYaxis().SetTitle("Step Efficiency")
+    graph.GetXaxis().SetTitleOffset(1.2)
+    graph.GetYaxis().SetTitleOffset(1.3)
+
+    graph.Draw("AP")
 
     latex = ROOT.TLatex()
     latex.SetNDC()
@@ -118,7 +121,7 @@ def draw_single(eff, label, region, i):
     leg.SetBorderSize(0)
     leg.SetFillStyle(0)
     leg.SetTextSize(0.035)
-    leg.AddEntry(eff, label, "p")
+    leg.AddEntry(graph, label, "p")
     leg.Draw()
 
     outdir = f"/eos/user/s/savarghe/www/EGMDQM/{args.year}/plots_step_eff_single"
@@ -128,14 +131,15 @@ def draw_single(eff, label, region, i):
     if not args.quiet:
         print(f"Saved: {cname}")
 
-# MAIN
-infile = f"out_barrelendcaps_{args.year}.root"
-f = ROOT.TFile(infile)
+if __name__ == "__main__":
+    year = args.year
+    infile = f"out_barrelendcaps_{year}.root"
+    f = ROOT.TFile.Open(infile)
 
-for region in ["EB", "EE", "EBplus", "EBminus", "EEplus", "EEminus"]:
-    histos = load_histograms(f, region)
-    for i in range(1, len(filters)):
-        eff, label, delta = compute_single_efficiency(histos, i, region)
-        draw_single(eff, label, region, i)
+    for region in ["EB", "EE", "EBplus", "EBminus", "EEplus", "EEminus"]:
+        histos = load_histograms(f, region)
+        for i in range(1, len(filters)):
+            graph, label, delta = compute_single_efficiency(histos, i, region)
+            draw_single(graph, label, region, i)
 
-f.Close()
+    f.Close()

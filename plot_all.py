@@ -5,6 +5,7 @@ import argparse
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(0)
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
+ROOT.gErrorIgnoreLevel = ROOT.kError
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--year', choices=['2024', '2025', '2024_25'], default='2025', help='Which year to process')
@@ -51,48 +52,38 @@ def load_histograms(file, region):
 
 def compute_efficiencies(histos, region_label):
     effs = []
+
     for i in range(1, len(filters)):
         num = histos.get(filters[i])
         denom = histos.get(filters[i - 1])
         if not num or not denom:
             continue
-        eff = num.Clone(f"eff_{region_label}_{i}")
-        eff.SetDirectory(0)
-        eff.Divide(denom)
-        eff.SetLineWidth(3)
-        eff.SetMarkerStyle(20)
-        eff.SetMarkerSize(0.9)
-        eff.SetMarkerColor(colors[i % len(colors)])
-        eff.SetLineColor(colors[i % len(colors)])
 
-        values = [eff.GetBinContent(b) for b in range(1, eff.GetNbinsX() + 1)]
-        first = [v for v in values[:5] if v > 0]
-        last = [v for v in values[-5:] if v > 0]
-        delta = 0
-        if first and last:
-            delta = (sum(last) / len(last)) - (sum(first) / len(first))
+        g = ROOT.TGraphAsymmErrors()
+        g.BayesDivide(num, denom)
+        g.SetName(f"g_{region_label}_{i}")
+        g.SetLineWidth(3)
+        g.SetMarkerStyle(20)
+        g.SetMarkerSize(1.0)
+        g.SetMarkerColor(colors[i % len(colors)])
+        g.SetLineColor(colors[i % len(colors)])
 
         label = short_label(filters[i])
-        if delta > 0.01:
-            label += " (up)"
-        elif delta < -0.01:
-            label += " (down)"
+        effs.append((label, g))
 
-        effs.append((label, eff))
-
-    # Total efficiency
+    # Total efficiency (last filter / first)
     num = histos.get(filters[-1])
     denom = histos.get(filters[0])
     if num and denom:
-        total_eff = num.Clone(f"eff_{region_label}_total")
-        total_eff.SetDirectory(0)
-        total_eff.Divide(denom)
-        total_eff.SetLineWidth(4)
-        total_eff.SetLineColor(ROOT.kBlack)
-        total_eff.SetMarkerColor(ROOT.kBlack)
-        total_eff.SetMarkerStyle(20)
-        total_eff.SetTitle("Total")
-        effs.append(("Total", total_eff))
+        g_total = ROOT.TGraphAsymmErrors()
+        g_total.BayesDivide(num, denom)
+        g_total.SetName(f"g_{region_label}_total")
+        g_total.SetLineWidth(4)
+        g_total.SetMarkerColor(ROOT.kBlack)
+        g_total.SetLineColor(ROOT.kBlack)
+        g_total.SetMarkerStyle(22)
+        g_total.SetTitle("Total")
+        effs.append(("Total", g_total))
 
     return effs
 
@@ -106,29 +97,32 @@ def draw_overlay(effs, title, outname, outdir):
     pad.cd()
     c._pad = pad
 
-    # Compute global y_min and y_max from all histograms
+    # Auto y-axis range
     y_min = 1.0
     y_max = 0.0
-    for _, h in effs:
-        for b in range(1, h.GetNbinsX() + 1):
-            val = h.GetBinContent(b)
-            err = h.GetBinError(b)
-            if val > 0 and val < y_min:
-                y_min = val
-            if val + err > y_max:
-                y_max = val + err
+    for _, g in effs:
+        for i in range(g.GetN()):
+            y = g.GetY()[i]
+            yerr = g.GetErrorYhigh(i)
+            if y > 0 and y < y_min:
+                y_min = y
+            if y + yerr > y_max:
+                y_max = y + yerr
 
-    for i, (label, h) in enumerate(effs):
-        h.SetMinimum(y_min * 0.95)
-        h.SetMaximum(y_max * 1.05)
-        h.SetTitle(title)
-        h.GetXaxis().SetTitle("Run")
-        h.GetYaxis().SetTitle("Filter Efficiency")
-        h.GetXaxis().SetTitleOffset(1.2)
-        h.GetYaxis().SetTitleOffset(1.3)
-        h.GetXaxis().SetLabelSize(0.04)
-        h.GetYaxis().SetLabelSize(0.04)
-        h.Draw("E SAME" if i else "E")
+    # Draw each graph
+    for i, (label, g) in enumerate(effs):
+        g.GetXaxis().SetTitle("Run")
+        g.GetYaxis().SetTitle("Filter Efficiency")
+        g.GetXaxis().SetTitleOffset(1.2)
+        g.GetYaxis().SetTitleOffset(1.3)
+        g.GetXaxis().SetLabelSize(0.04)
+        g.GetYaxis().SetLabelSize(0.04)
+        g.SetMinimum(y_min * 0.95)
+        g.SetMaximum(y_max * 1.05)
+        if i == 0:
+            g.SetTitle(f"{title}")  # Set title on first graph only
+        draw_opt = "AP" if i == 0 else "P SAME"
+        g.Draw(draw_opt)
 
     # Annotation
     latex = ROOT.TLatex()
@@ -143,8 +137,8 @@ def draw_overlay(effs, title, outname, outdir):
     legend.SetBorderSize(0)
     legend.SetFillStyle(0)
     legend.SetTextSize(0.03)
-    for label, h in effs:
-        legend.AddEntry(h, label, "l")
+    for label, g in effs:
+        legend.AddEntry(g, label, "p")
     legend.Draw()
 
     os.makedirs(outdir, exist_ok=True)
