@@ -82,6 +82,7 @@ def compute_efficiencies(histos, region_label):
         g_total.SetMarkerColor(ROOT.kBlack)
         g_total.SetLineColor(ROOT.kBlack)
         g_total.SetMarkerStyle(22)
+        g_total.SetMarkerSize(1.0)
         g_total.SetTitle("Total")
         effs.append(("Total", g_total))
 
@@ -100,15 +101,18 @@ def draw_overlay(effs, title, outname, outdir):
     # Auto y-axis range
     y_min = 1.0
     y_max = 0.0
+    latest_run = 0
     for _, g in effs:
         for i in range(g.GetN()):
+            x = g.GetX()[i]
             y = g.GetY()[i]
             yerr = g.GetErrorYhigh(i)
             if y > 0 and y < y_min:
                 y_min = y
             if y + yerr > y_max:
                 y_max = y + yerr
-
+            if x > latest_run:
+                latest_run = int(x)
     # Draw each graph
     for i, (label, g) in enumerate(effs):
         g.GetXaxis().SetTitle("Run")
@@ -117,19 +121,21 @@ def draw_overlay(effs, title, outname, outdir):
         g.GetYaxis().SetTitleOffset(1.3)
         g.GetXaxis().SetLabelSize(0.04)
         g.GetYaxis().SetLabelSize(0.04)
-        g.SetMinimum(y_min * 0.95)
+        g.SetMinimum(y_min * 0.94)
         g.SetMaximum(y_max * 1.05)
         if i == 0:
             g.SetTitle(f"{title}")  # Set title on first graph only
         draw_opt = "AP" if i == 0 else "P SAME"
         g.Draw(draw_opt)
-
+        
     # Annotation
     latex = ROOT.TLatex()
     latex.SetNDC()
     latex.SetTextSize(0.035)
     latex.SetTextColor(ROOT.kBlack)
     latex.DrawLatex(0.15, 0.87, "{HLT_Ele32_WPTight_Gsf} (from HLT DQM T&P)")
+    latex.SetTextSize(0.032)
+    latex.DrawLatex(0.15, 0.15, f"#it{{Updated till Run {latest_run}}}")
 
     # Legend
     c.cd()

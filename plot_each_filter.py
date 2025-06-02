@@ -109,13 +109,16 @@ def draw_single(graph, label, region, i):
     graph.GetYaxis().SetTitleOffset(1.3)
 
     graph.Draw("AP")
+    # Get latest run
+    latest_run = int(max([graph.GetX()[j] for j in range(graph.GetN())]))
+    
 
     latex = ROOT.TLatex()
     latex.SetNDC()
     latex.SetTextSize(0.035)
     latex.SetTextColor(ROOT.kBlack)
     latex.DrawLatex(0.15, 0.87, "{HLT_Ele32_WPTight_Gsf} (from HLT DQM T&P)")
-
+    latex.DrawLatex(0.15, 0.18, f"#it{{Updated till Run {latest_run}}}")
     c.cd()
     leg = ROOT.TLegend(0.75, 0.78, 0.94, 0.89)
     leg.SetBorderSize(0)
@@ -128,6 +131,11 @@ def draw_single(graph, label, region, i):
     os.makedirs(outdir, exist_ok=True)
     cname = f"{outdir}/{region}_{short_label(filters[i])}.png"
     c.SaveAs(cname)
+    # Also save the graph to a ROOT file
+    rootname = f"{outdir}/{region}_{short_label(filters[i])}.root"
+    fout = ROOT.TFile.Open(rootname, "RECREATE")
+    graph.Write()
+    fout.Close()
     if not args.quiet:
         print(f"Saved: {cname}")
 
