@@ -29,7 +29,7 @@ filters = [
 
 colors = [
     ROOT.kRed + 1, ROOT.kBlue + 1, ROOT.kGreen + 2, ROOT.kOrange + 7,
-    ROOT.kViolet + 1, ROOT.kCyan + 1, ROOT.kMagenta + 2, ROOT.kAzure + 2,
+    ROOT.kViolet + 1, ROOT.kOrange + 3, ROOT.kMagenta + 2, ROOT.kAzure + 2,
     ROOT.kPink + 9, ROOT.kTeal + 2, ROOT.kSpring + 9, ROOT.kGray + 3
 ]
 
@@ -82,7 +82,7 @@ def compute_efficiencies(histos, region_label):
         g_total.SetMarkerColor(ROOT.kBlack)
         g_total.SetLineColor(ROOT.kBlack)
         g_total.SetMarkerStyle(22)
-        g_total.SetMarkerSize(1.0)
+        g_total.SetMarkerSize(1.2)
         g_total.SetTitle("Total")
         effs.append(("Total", g_total))
 
