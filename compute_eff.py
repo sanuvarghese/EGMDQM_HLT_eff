@@ -1,5 +1,3 @@
-#based on Laurent's code
-
 import ROOT
 import os
 import re
@@ -80,7 +78,7 @@ for fname in sorted(os.listdir(folder_path)):
         continue
     try:
         EB, EBplus, EBminus, EE, EEplus, EEminus = get_counts(full_path)
-        if EB[0] > 30000:
+        if EB[0] > 20000:
             valid_runs.append(run)
             all_counts.append((run, EB, EBplus, EBminus, EE, EEplus, EEminus))
         else:
