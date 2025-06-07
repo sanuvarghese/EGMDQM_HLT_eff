@@ -38,7 +38,7 @@ python3 website/website/generate_html_index.py
 ```
 `unpack.py ` unpacks the zip files from ```/eos/cms/store/group/comm_dqm/DQMGUI_Backup/data/offline/OnlineData/original/``` selecting only the HLTpb files of  greater than a run number and a minimum size (10 MB). It also skips the existing files(that are already unpacked) in the target directory.
 
-`compute_eff.py` saves the filter wise counts of each Single Ele filter in the desired mass window for EE and EB (plus/minus).
+`compute_eff.py` saves the filter wise counts of each Single Ele filter in the desired mass window for EE and EB (plus/minus). This is a modified version of Laurent's original script
 
 `plot_all.py` calculates the filter wise efficiency and plots them overlaying them in a single plot.
 
