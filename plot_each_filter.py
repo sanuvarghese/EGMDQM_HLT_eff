@@ -56,6 +56,20 @@ def compute_single_efficiency(histos, i, region_label):
 
     g = ROOT.TGraphAsymmErrors()
     g.BayesDivide(num, denom)
+    # Shift X points back by 0.5 to align with integer run numbers
+    for j in range(g.GetN()):
+        x = g.GetX()[j]
+        y = g.GetY()[j]
+        ex_low = g.GetErrorXlow(j)
+        ex_high = g.GetErrorXhigh(j)
+        ey_low = g.GetErrorYlow(j)
+        ey_high = g.GetErrorYhigh(j)
+        g.SetPoint(j, x - 0.5, y)
+        g.SetPointEXlow(j, ex_low)
+        g.SetPointEXhigh(j, ex_high)
+        g.SetPointEYlow(j, ey_low)
+        g.SetPointEYhigh(j, ey_high)
+
     g.SetName(f"g_{region_label}_{i}")
     g.SetLineWidth(3)
     g.SetMarkerStyle(20)
@@ -118,7 +132,7 @@ def draw_single(graph, label, region, i):
     latex.SetTextSize(0.035)
     latex.SetTextColor(ROOT.kBlack)
     latex.DrawLatex(0.15, 0.87, "{HLT_Ele32_WPTight_Gsf} (from HLT DQM T&P)")
-    latex.DrawLatex(0.15, 0.18, f"#it{{Updated till Run {latest_run}}}")
+    latex.DrawLatex(0.10, 0.03, f"#it{{Updated till Run {latest_run}}}")
     c.cd()
     leg = ROOT.TLegend(0.75, 0.78, 0.94, 0.89)
     leg.SetBorderSize(0)
@@ -131,6 +145,7 @@ def draw_single(graph, label, region, i):
     os.makedirs(outdir, exist_ok=True)
     cname = f"{outdir}/{region}_{short_label(filters[i])}.png"
     c.SaveAs(cname)
+    c.SaveAs(cname.replace(".png", ".pdf"))  # Save PDF
     # Also save the graph to a ROOT file
     rootname = f"{outdir}/{region}_{short_label(filters[i])}.root"
     fout = ROOT.TFile.Open(rootname, "RECREATE")

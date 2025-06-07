@@ -61,6 +61,19 @@ def compute_efficiencies(histos, region_label):
 
         g = ROOT.TGraphAsymmErrors()
         g.BayesDivide(num, denom)
+        # Shift X points back by 0.5 to get correct run number
+        for j in range(g.GetN()):
+            x = g.GetX()[j]
+            y = g.GetY()[j]
+            ex_low = g.GetErrorXlow(j)
+            ex_high = g.GetErrorXhigh(j)
+            ey_low = g.GetErrorYlow(j)
+            ey_high = g.GetErrorYhigh(j)
+            g.SetPoint(j, x - 0.5, y)
+            g.SetPointEXlow(j, ex_low)
+            g.SetPointEXhigh(j, ex_high)
+            g.SetPointEYlow(j, ey_low)
+            g.SetPointEYhigh(j, ey_high)
         g.SetName(f"g_{region_label}_{i}")
         g.SetLineWidth(3)
         g.SetMarkerStyle(20)
@@ -135,7 +148,7 @@ def draw_overlay(effs, title, outname, outdir):
     latex.SetTextColor(ROOT.kBlack)
     latex.DrawLatex(0.15, 0.87, "{HLT_Ele32_WPTight_Gsf} (from HLT DQM T&P)")
     latex.SetTextSize(0.032)
-    latex.DrawLatex(0.15, 0.15, f"#it{{Updated till Run {latest_run}}}")
+    latex.DrawLatex(0.10, 0.03, f"#it{{Updated till Run {latest_run}}}")
 
     # Legend
     c.cd()
@@ -150,6 +163,8 @@ def draw_overlay(effs, title, outname, outdir):
     os.makedirs(outdir, exist_ok=True)
     full_out = os.path.join(outdir, outname)
     c.SaveAs(full_out)
+    c.SaveAs(full_out.replace(".png", ".pdf"))  # PDF
+    c.SaveAs(full_out.replace(".png", ".root"))  # ROOT
     if not args.quiet:
         print(f"Saved: {full_out}")
 
