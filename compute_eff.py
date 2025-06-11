@@ -30,12 +30,12 @@ def extract_run_number(filename):
     match = re.search(r'R0*([0-9]{6})', filename)
     return int(match.group(1)) if match else None
 
-def get_counts(filename, forfakes=False):
+def get_counts(filename, forfakes=True):
     f = ROOT.TFile.Open(filename)
     prefix = filename[-11:-5]
     folder = f"DQMData/Run {prefix}/HLT/Run summary/EGM/TrigObjTnP/"
-    firstbin = 55 if forfakes else 25
-
+    firstbin = 21 #81 GeV
+    lastbin = 41  #101 GeV
     EB, EBplus, EBminus = [], [], []
     EE, EEplus, EEminus = [], [], []
 
@@ -45,20 +45,36 @@ def get_counts(filename, forfakes=False):
             EB.append(0); EBplus.append(0); EBminus.append(0)
             EE.append(0); EEplus.append(0); EEminus.append(0)
             continue
-        val_EB = int(h.Integral(2, 3, firstbin, 60))
-        val_EBplus = int(h.Integral(3, 3, firstbin, 60))
-        val_EBminus = int(h.Integral(2, 2, firstbin, 60))
-        val_EEplus = int(h.Integral(4, 4, firstbin, 60))
-        val_EEminus = int(h.Integral(1, 1, firstbin, 60))
+        val_EB = int(h.Integral(2, 3, firstbin, lastbin))
+        val_EBplus = int(h.Integral(3, 3, firstbin, lastbin))
+        val_EBminus = int(h.Integral(2, 2, firstbin, lastbin))
+        val_EEplus = int(h.Integral(4, 4, firstbin, lastbin))
+        val_EEminus = int(h.Integral(1, 1, firstbin, lastbin))
         val_EE = val_EEplus + val_EEminus
+        if forfakes:
+            # Fake estimation: sum of bins 0-5 (60-65 GeV) and 55-60 (115-120 GeV)
+            fake_EB = h.Integral(2, 3, 0, 5) + h.Integral(2, 3, 55, 60)
+            fake_EBplus = h.Integral(3, 3, 0, 5) + h.Integral(3, 3, 55, 60)
+            fake_EBminus = h.Integral(2, 2, 0, 5) + h.Integral(2, 2, 55, 60)
+            fake_EEplus = h.Integral(4, 4, 0, 5) + h.Integral(4, 4, 55, 60)
+            fake_EEminus = h.Integral(1, 1, 0, 5) + h.Integral(1, 1, 55, 60)
+            fake_EE = fake_EEplus + fake_EEminus
 
+            # Subtract fakes and ensure non-negative counts
+            val_EB = max(0, val_EB - fake_EB)
+            val_EBplus = max(0, val_EBplus - fake_EBplus)
+            val_EBminus = max(0, val_EBminus - fake_EBminus)
+            val_EE = max(0, val_EE - fake_EE)
+            val_EEplus = max(0, val_EEplus - fake_EEplus)
+            val_EEminus = max(0, val_EEminus - fake_EEminus)
+        # Convert to int for consistency with original
         EB.append(val_EB)
         EBplus.append(val_EBplus)
         EBminus.append(val_EBminus)
         EE.append(val_EE)
         EEplus.append(val_EEplus)
         EEminus.append(val_EEminus)
-
+        
     return EB, EBplus, EBminus, EE, EEplus, EEminus
 
 # Step 1: Read and store data for valid runs
