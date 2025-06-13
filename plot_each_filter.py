@@ -96,9 +96,9 @@ def draw_single(graph, label, region, i):
         return
 
     c = ROOT.TCanvas("c", "", 1000, 700)
-    c.SetRightMargin(0.2)
+    c.SetRightMargin(0.1)
 
-    pad = ROOT.TPad("pad", "", 0.0, 0.0, 0.85, 1.0)
+    pad = ROOT.TPad("pad", "", 0.0, 0.0, 1.0, 1.0)
     pad.SetBottomMargin(0.12)
     pad.Draw()
     pad.cd()
@@ -114,7 +114,7 @@ def draw_single(graph, label, region, i):
         if y + yerr > y_max:
             y_max = y + yerr
 
-    graph.SetMinimum(y_min * 0.9)
+    graph.SetMinimum(y_min * 0.95)
     graph.SetMaximum(y_max * 1.02)
     graph.SetTitle(f"{region}: {label} Filter Efficiency vs Run") 
     graph.GetXaxis().SetTitle("Run")
@@ -134,7 +134,7 @@ def draw_single(graph, label, region, i):
     latex.DrawLatex(0.15, 0.87, "{HLT_Ele32_WPTight_Gsf} (from HLT DQM T&P)")
     latex.DrawLatex(0.10, 0.03, f"#it{{Updated till Run {latest_run}}}")
     c.cd()
-    leg = ROOT.TLegend(0.75, 0.78, 0.94, 0.89)
+    leg = ROOT.TLegend(0.15, 0.18, 0.34, 0.29)
     leg.SetBorderSize(0)
     leg.SetFillStyle(0)
     leg.SetTextSize(0.035)
